@@ -100,9 +100,17 @@ data class V2rayConfig(
             var reserved: List<Int>? = null,
             var mtu: Int? = null,
             var domainStrategy: String? = null,
+            /*Freedom*/
+            var finalRules: List<FreedomFinalRule>? = null,
         ) {
             data class ReverseBean(
                 var tag: String,
+            )
+
+            data class FreedomFinalRule(
+                var action: String,
+                var network: String? = null,
+                var ip: ArrayList<String>? = null,
             )
 
             data class WireGuardBean(

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">v2rayNG</string>
+    <string name="app_name" translatable="false">v2rayNG Reverse</string>
     <string name="app_widget_name">Switch</string>
     <string name="app_tile_name">Switch</string>
     <string name="app_tile_first_use">First use of this feature, please use the app to add server</string>
@@ -94,6 +94,7 @@
     <string name="server_lab_reverse_enable">Enable VLESS Reverse</string>
     <string name="server_lab_reverse_summary">The reverse connection uses the current node address, transport, TLS and flow settings.</string>
     <string name="server_lab_reverse_id">Reverse tunnel UUID</string>
+    <string name="server_lab_reverse_ip">Reverse IP/CIDR</string>
     <string name="server_lab_public_key">PublicKey</string>
     <string name="server_lab_preshared_key">PreSharedKey(optional)</string>
     <string name="server_lab_short_id">ShortId</string>

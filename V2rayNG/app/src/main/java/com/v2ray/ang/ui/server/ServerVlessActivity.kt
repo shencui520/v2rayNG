@@ -12,6 +12,7 @@ import com.v2ray.ang.extension.toast
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
+import com.v2ray.ang.util.Utils
 
 class ServerVlessActivity : BaseServerActivity() {
 
@@ -56,6 +57,10 @@ class ServerVlessActivity : BaseServerActivity() {
             toast(R.string.server_lab_reverse_id)
             return false
         }
+        if (config.reverseEnabled == true && !isValidReverseIp(config.reverseIp)) {
+            toast(R.string.server_lab_reverse_ip)
+            return false
+        }
         return true
     }
 
@@ -96,6 +101,22 @@ class ServerVlessActivity : BaseServerActivity() {
                 state.reversePassword,
                 { state.reversePassword = it }
             )
+            FormTextField(
+                stringResource(R.string.server_lab_reverse_ip),
+                state.reverseIp,
+                { state.reverseIp = it }
+            )
         }
+    }
+
+    private fun isValidReverseIp(value: String?): Boolean {
+        val target = value?.trim().orEmpty()
+        val parts = target.split('/')
+        if (target.isEmpty() || parts.size !in 1..2 || !Utils.isIpAddress(parts.first())) return false
+        if (parts.size == 1) return true
+
+        val prefix = parts[1].toIntOrNull() ?: return false
+        val maximumPrefix = if (parts.first().contains(':')) 128 else 32
+        return prefix in 0..maximumPrefix
     }
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">v2rayNG</string>
+    <string name="app_name" translatable="false">v2rayNG Reverse</string>
     <string name="app_widget_name">开关</string>
     <string name="app_tile_name">开关</string>
     <string name="app_tile_first_use">初次使用此功能请先用 APP 添加配置</string>
@@ -94,6 +94,7 @@
     <string name="server_lab_reverse_enable">启用 VLESS 反代</string>
     <string name="server_lab_reverse_summary">反代连接沿用此节点的地址、传输、TLS 和 flow 设置。</string>
     <string name="server_lab_reverse_id">反代隧道 UUID</string>
+    <string name="server_lab_reverse_ip">反代 IP/CIDR</string>
     <string name="server_lab_public_key">PublicKey</string>
     <string name="server_lab_preshared_key">PreSharedKey (optional)</string>
     <string name="server_lab_short_id">ShortId</string>

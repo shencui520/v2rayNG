@@ -27,16 +27,21 @@ class VlessReverseConfigTest {
             settings = V2rayConfig.OutboundBean.OutSettingsBean(id = "reverse-uuid"),
         )
 
-        assertTrue(CoreConfigManager.appendVlessReverse(config, reverse))
+        assertTrue(CoreConfigManager.appendVlessReverse(config, reverse, "192.168.5.0/24"))
 
-        assertEquals(3, config.outbounds.size)
+        assertEquals(4, config.outbounds.size)
         assertEquals("proxy", config.outbounds[0].tag)
         assertEquals("reverse", reverse.tag)
         assertEquals(false, reverse.mux?.enabled)
         assertEquals(-1, reverse.mux?.concurrency)
         assertEquals("reverse-in", reverse.settings?.reverse?.tag)
+        assertEquals("home-direct", config.outbounds[3].tag)
+        assertEquals("freedom", config.outbounds[3].protocol)
+        assertEquals("allow", config.outbounds[3].settings?.finalRules?.single()?.action)
+        assertEquals("tcp,udp", config.outbounds[3].settings?.finalRules?.single()?.network)
+        assertEquals(listOf("192.168.5.0/24"), config.outbounds[3].settings?.finalRules?.single()?.ip)
         assertEquals(listOf("reverse-in"), config.routing.rules.first().inboundTag)
-        assertEquals("direct", config.routing.rules.first().outboundTag)
+        assertEquals("home-direct", config.routing.rules.first().outboundTag)
         assertEquals("proxy", config.routing.rules[1].outboundTag)
     }
 
