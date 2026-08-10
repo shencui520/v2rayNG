@@ -11,7 +11,6 @@ import com.v2ray.ang.AppConfig.WIREGUARD_LOCAL_MTU
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.enums.NetworkType
-import com.v2ray.ang.extension.isHomeNetworkProfile
 import com.v2ray.ang.extension.nullIfBlank
 import com.v2ray.ang.util.JsonUtil
 
@@ -62,6 +61,8 @@ class ServerUiState(
     echConfigList: String = "",
     verifyPeerCertByName: String = "",
     pinnedCA256: String = "",
+    reverseEnabled: Boolean = false,
+    reversePassword: String = "",
     isFetchingCert: Boolean = false
 ) {
     var configType by mutableStateOf(configType)
@@ -110,11 +111,13 @@ class ServerUiState(
     var echConfigList by mutableStateOf(echConfigList)
     var verifyPeerCertByName by mutableStateOf(verifyPeerCertByName)
     var pinnedCA256 by mutableStateOf(pinnedCA256)
+    var reverseEnabled by mutableStateOf(reverseEnabled)
+    var reversePassword by mutableStateOf(reversePassword)
     var isFetchingCert by mutableStateOf(isFetchingCert)
 
     fun toProfileItem(initialConfig: ProfileItem): ProfileItem {
         val isVmess = configType == EConfigType.VMESS
-        val isVless = configType == EConfigType.VLESS || configType.isHomeNetworkProfile()
+        val isVless = configType == EConfigType.VLESS
         val isShadowsocks = configType == EConfigType.SHADOWSOCKS
         val isSocksOrHttp = configType == EConfigType.SOCKS || configType == EConfigType.HTTP
         val isWireguard = configType == EConfigType.WIREGUARD
@@ -176,7 +179,9 @@ class ServerUiState(
             mldsa65Verify = mldsa65Verify,
             echConfigList = echConfigList,
             verifyPeerCertByName = verifyPeerCertByName,
-            pinnedCA256 = pinnedCA256
+            pinnedCA256 = pinnedCA256,
+            reverseEnabled = if (isVless) reverseEnabled else null,
+            reversePassword = if (isVless && reverseEnabled) reversePassword.nullIfBlank() else null,
         )
     }
 
@@ -230,7 +235,9 @@ class ServerUiState(
                 mldsa65Verify = initialConfig.mldsa65Verify ?: "",
                 echConfigList = initialConfig.echConfigList ?: "",
                 verifyPeerCertByName = initialConfig.verifyPeerCertByName ?: "",
-                pinnedCA256 = initialConfig.pinnedCA256 ?: ""
+                pinnedCA256 = initialConfig.pinnedCA256 ?: "",
+                reverseEnabled = initialConfig.reverseEnabled == true,
+                reversePassword = initialConfig.reversePassword ?: ""
             )
 
         fun from(

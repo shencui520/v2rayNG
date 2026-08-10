@@ -11,6 +11,7 @@ import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.toast
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
+import com.v2ray.ang.ui.compose.SettingsSwitchItem
 
 class ServerVlessActivity : BaseServerActivity() {
 
@@ -35,6 +36,7 @@ class ServerVlessActivity : BaseServerActivity() {
         ) {
             CommonBasicFields(uiState)
             VlessProtocolFields(uiState, flowOptions)
+            VlessReverseFields(uiState)
             CommonNetworkFields(uiState, options)
             CommonStreamSecurityFields(
                 state = uiState,
@@ -48,6 +50,10 @@ class ServerVlessActivity : BaseServerActivity() {
     override fun validateProtocolConfig(config: ProfileItem): Boolean {
         if (config.password.isNullOrBlank()) {
             toast(R.string.server_lab_id)
+            return false
+        }
+        if (config.reverseEnabled == true && config.reversePassword.isNullOrBlank()) {
+            toast(R.string.server_lab_reverse_id)
             return false
         }
         return true
@@ -74,5 +80,22 @@ class ServerVlessActivity : BaseServerActivity() {
             flowOptions,
             { state.flow = it }
         )
+    }
+
+    @Composable
+    private fun VlessReverseFields(state: ServerUiState) {
+        SettingsSwitchItem(
+            title = stringResource(R.string.server_lab_reverse_enable),
+            summary = stringResource(R.string.server_lab_reverse_summary),
+            checked = state.reverseEnabled,
+            onCheckedChange = { state.reverseEnabled = it }
+        )
+        if (state.reverseEnabled) {
+            FormTextField(
+                stringResource(R.string.server_lab_reverse_id),
+                state.reversePassword,
+                { state.reversePassword = it }
+            )
+        }
     }
 }

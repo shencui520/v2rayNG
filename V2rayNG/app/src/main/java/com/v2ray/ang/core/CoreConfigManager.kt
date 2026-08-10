@@ -26,6 +26,9 @@ object CoreConfigManager {
     private var initConfigCache: String? = null
     private var initConfigCacheWithTun: String? = null
 
+    private const val TAG_VLESS_REVERSE = "reverse"
+    private const val TAG_VLESS_REVERSE_INBOUND = "reverse-in"
+
     //region get config function
 
     /**
@@ -221,6 +224,10 @@ object CoreConfigManager {
                 )
             }
         }
+
+        // This must be first: reverse traffic is delivered by Xray through the
+        // virtual reverse inbound, before any user destination rule is evaluated.
+        configureVlessReverse(primaryResolvedOutbound.profile, v2rayConfig)
 
         applyObservability(v2rayConfig, balancerStrategies)
         applySpeedDisabled(v2rayConfig)
@@ -557,6 +564,68 @@ object CoreConfigManager {
             inboundTun?.settings?.mtu = SettingsManager.getVpnMtu()
             inboundTun?.sniffing = inbound1.sniffing
         }
+    }
+
+    /**
+     * Add the optional VLESS Reverse connection to a normal VLESS profile.
+     *
+     * The primary VLESS outbound and every ordinary v2rayNG route are generated
+     * first.  This method only appends the extra reverse outbound and its
+     * virtual-inbound rule, so enabling reverse never replaces the user's
+     * routing, DNS, subscription, or VPN configuration.
+     */
+    private fun configureVlessReverse(profile: ProfileItem, v2rayConfig: V2rayConfig) {
+        if (profile.configType != EConfigType.VLESS || profile.reverseEnabled != true) return
+
+        val reverseId = profile.reversePassword?.trim().orEmpty()
+        if (reverseId.isEmpty()) {
+            LogUtil.w(AppConfig.TAG, "VLESS reverse is enabled but its UUID is empty; skipping reverse outbound")
+            return
+        }
+        val reverseOutbound = convertProfile2Outbound(
+            profile.copy(
+                password = reverseId,
+                reverseEnabled = false,
+                reversePassword = null,
+            )
+        ) ?: run {
+            LogUtil.w(AppConfig.TAG, "Failed to create VLESS reverse outbound")
+            return
+        }
+
+        if (!appendVlessReverse(v2rayConfig, reverseOutbound)) {
+            LogUtil.w(AppConfig.TAG, "VLESS reverse outbound tag is already in use; skipping reverse outbound")
+        }
+    }
+
+    /**
+     * Inject a prepared reverse VLESS outbound into a generated runtime config.
+     * Kept separate from profile conversion so the exact JSON addition can be
+     * verified without depending on Android settings storage.
+     */
+    internal fun appendVlessReverse(
+        v2rayConfig: V2rayConfig,
+        reverseOutbound: V2rayConfig.OutboundBean,
+    ): Boolean {
+        if (v2rayConfig.outbounds.any { it.tag == TAG_VLESS_REVERSE }) return false
+
+        // A VLESS Reverse tunnel manages its own persistent connection. Mux on
+        // that outbound would create an additional, incompatible layer.
+        reverseOutbound.tag = TAG_VLESS_REVERSE
+        reverseOutbound.mux = V2rayConfig.OutboundBean.MuxBean(enabled = false, concurrency = -1)
+        reverseOutbound.settings?.reverse = V2rayConfig.OutboundBean.OutSettingsBean.ReverseBean(
+            tag = TAG_VLESS_REVERSE_INBOUND
+        )
+        v2rayConfig.outbounds.add(reverseOutbound)
+
+        v2rayConfig.routing.rules.add(
+            0,
+            V2rayConfig.RoutingBean.RulesBean(
+                inboundTag = arrayListOf(TAG_VLESS_REVERSE_INBOUND),
+                outboundTag = AppConfig.TAG_DIRECT,
+            )
+        )
+        return true
     }
 
     /**

@@ -15,10 +15,6 @@ enum class EConfigType(val value: Int, val protocolScheme: String) {
     HYSTERIA2(9, AppConfig.HYSTERIA2),
     HYSTERIA(900, AppConfig.HYSTERIA),
     HTTP(10, AppConfig.HTTP),
-    /** A VLESS profile that keeps a reverse tunnel from the home device to the VPS. */
-    VLESS_REVERSE_HOME(11, AppConfig.CUSTOM),
-    /** A VLESS profile that sends only the configured home networks to the VPS. */
-    VLESS_ROAM_HOME(12, AppConfig.CUSTOM),
     POLICYGROUP(101, AppConfig.CUSTOM),
     PROXYCHAIN(102, AppConfig.CUSTOM);
 

@@ -74,9 +74,9 @@ data class ProfileItem(
 
     var browserDialerMode: String? = null,
 
-    // VLESS reverse / remote-home profiles. These are saved as generated full Xray configs.
+    // Optional VLESS Reverse tunnel layered on top of a normal VLESS profile.
+    var reverseEnabled: Boolean? = null,
     var reversePassword: String? = null,
-    var homeCidrs: String? = null,
 ) {
 
     companion object {

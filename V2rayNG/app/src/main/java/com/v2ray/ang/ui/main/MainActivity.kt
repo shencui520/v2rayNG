@@ -34,7 +34,6 @@ import com.v2ray.ang.ui.routing.RoutingSettingActivity
 import com.v2ray.ang.ui.server.ProfileEditorResult
 import com.v2ray.ang.ui.server.ServerCustomConfigActivity
 import com.v2ray.ang.ui.server.ServerGroupActivity
-import com.v2ray.ang.ui.server.ServerHomeNetworkActivity
 import com.v2ray.ang.ui.server.ServerHttpActivity
 import com.v2ray.ang.ui.server.ServerHysteria2Activity
 import com.v2ray.ang.ui.server.ServerProxyChainActivity
@@ -209,10 +208,6 @@ class MainActivity : HelperBaseComponentActivity() {
             EConfigType.TROJAN.value -> Intent(this, ServerTrojanActivity::class.java)
             EConfigType.WIREGUARD.value -> Intent(this, ServerWireguardActivity::class.java)
             EConfigType.HYSTERIA2.value -> Intent(this, ServerHysteria2Activity::class.java)
-            EConfigType.VLESS_REVERSE_HOME.value,
-            EConfigType.VLESS_ROAM_HOME.value -> Intent(this, ServerHomeNetworkActivity::class.java).apply {
-                putExtra("createConfigType", createConfigType)
-            }
             else -> Intent(this, ServerHttpActivity::class.java).apply {
                 putExtra("createConfigType", createConfigType)
             }
@@ -255,8 +250,6 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun editServer(guid: String, profile: ProfileItem) {
         val activityClass = when (profile.configType) {
             EConfigType.CUSTOM -> ServerCustomConfigActivity::class.java
-            EConfigType.VLESS_REVERSE_HOME,
-            EConfigType.VLESS_ROAM_HOME -> ServerHomeNetworkActivity::class.java
             EConfigType.POLICYGROUP -> ServerGroupActivity::class.java
             EConfigType.PROXYCHAIN -> ServerProxyChainActivity::class.java
             EConfigType.VMESS -> ServerVmessActivity::class.java

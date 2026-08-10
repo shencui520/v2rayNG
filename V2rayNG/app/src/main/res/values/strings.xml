@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">v2rayNG Reverse Home</string>
+    <string name="app_name" translatable="false">v2rayNG</string>
     <string name="app_widget_name">Switch</string>
     <string name="app_tile_name">Switch</string>
     <string name="app_tile_first_use">First use of this feature, please use the app to add server</string>
@@ -36,8 +36,6 @@
     <string name="menu_item_import_config_proxy_chain">Add [Proxy chain]</string>
     <string name="menu_item_import_config_manually_vmess">Add [VMess]</string>
     <string name="menu_item_import_config_manually_vless">Add [VLESS]</string>
-    <string name="menu_item_import_config_vless_reverse_home">Add [VLESS reverse home tunnel]</string>
-    <string name="menu_item_import_config_vless_roam_home">Add [VLESS home access]</string>
     <string name="menu_item_import_config_manually_ss">Add [Shadowsocks]</string>
     <string name="menu_item_import_config_manually_socks">Add [SOCKS]</string>
     <string name="menu_item_import_config_manually_http">Add [HTTP]</string>
@@ -93,12 +91,9 @@
     <string name="server_lab_security4">User(Optional)</string>
     <string name="server_lab_encryption">encryption</string>
     <string name="server_lab_flow">flow</string>
-    <string name="server_lab_reverse_id">Reverse tunnel ID</string>
-    <string name="server_lab_home_cidrs">Home networks (IPv4 CIDR, comma separated)</string>
-    <string name="server_lab_home_cidrs_hint">Example: 192.168.5.0/24</string>
-    <string name="title_vless_reverse_home">VLESS reverse home tunnel</string>
-    <string name="title_vless_roam_home">VLESS home access</string>
-    <string name="toast_home_cidrs_required">Enter at least one valid IPv4 CIDR for the home network</string>
+    <string name="server_lab_reverse_enable">Enable VLESS Reverse</string>
+    <string name="server_lab_reverse_summary">The reverse connection uses this node's address, transport, TLS and flow settings.</string>
+    <string name="server_lab_reverse_id">Reverse tunnel UUID</string>
     <string name="server_lab_public_key">PublicKey</string>
     <string name="server_lab_preshared_key">PreSharedKey(optional)</string>
     <string name="server_lab_short_id">ShortId</string>

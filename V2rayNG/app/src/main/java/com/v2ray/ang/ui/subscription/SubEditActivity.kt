@@ -57,8 +57,6 @@ class SubEditActivity : BaseComponentActivity() {
         suggestions = SettingsManager.getProfileRemarks(
             excludeConfigTypes = setOf(
                 EConfigType.CUSTOM,
-                EConfigType.VLESS_REVERSE_HOME,
-                EConfigType.VLESS_ROAM_HOME,
                 EConfigType.POLICYGROUP,
                 EConfigType.PROXYCHAIN,
             )

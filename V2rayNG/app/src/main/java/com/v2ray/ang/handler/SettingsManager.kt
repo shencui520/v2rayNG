@@ -16,7 +16,6 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.RulesetItem
 import com.v2ray.ang.dto.entities.SubscriptionItem
 import com.v2ray.ang.enums.EConfigType
-import com.v2ray.ang.extension.isRawConfigType
 import com.v2ray.ang.enums.RoutingType
 import com.v2ray.ang.enums.VpnInterfaceAddressConfig
 import com.v2ray.ang.extension.moveItem
@@ -180,10 +179,12 @@ object SettingsManager {
         val guid = MmkvManager.getSelectServer() ?: return false
         val config = decodeServerConfig(guid) ?: return false
 
-        // The roaming device must capture the selected private CIDRs before Xray
-        // can route them to the VPS. Letting Android bypass LAN here would make
-        // the first, explicit home-network rule unreachable.
-        if (config.configType == EConfigType.VLESS_ROAM_HOME) {
+        // A specific private-network rule (for example
+        // 192.168.5.0/24 -> proxy) is meaningful only when Android delivers it
+        // to Xray. It therefore takes precedence over the generic LAN-bypass
+        // preference, while all other LAN traffic can still be handled by the
+        // user's regular direct rules.
+        if (routingRulesetsRoutePrivateTrafficThroughCore()) {
             return false
         }
 
@@ -194,7 +195,7 @@ object SettingsManager {
             return false
         }
 
-        if (config.configType.isRawConfigType()) {
+        if (config.configType == EConfigType.CUSTOM) {
             val raw = MmkvManager.decodeServerRaw(guid) ?: return false
             val v2rayConfig = JsonUtil.fromJsonSafe(raw, V2rayConfig::class.java)
             val exist = v2rayConfig?.routing?.rules?.filter { it.outboundTag == TAG_DIRECT }?.any {
@@ -208,6 +209,26 @@ object SettingsManager {
             it.domain?.contains(GEOSITE_PRIVATE) == true || it.ip?.contains(GEOIP_PRIVATE) == true
         }
         return exist == true
+    }
+
+    private fun routingRulesetsRoutePrivateTrafficThroughCore(): Boolean {
+        return MmkvManager.decodeRoutingRulesets()
+            ?.asSequence()
+            ?.filter { it.enabled && it.outboundTag != TAG_DIRECT }
+            ?.flatMap { it.ip.orEmpty().asSequence() }
+            ?.any(::isPrivateIpRoute)
+            ?: false
+    }
+
+    private fun isPrivateIpRoute(value: String): Boolean {
+        val route = value.trim()
+        if (route == GEOIP_PRIVATE || route.endsWith(":private")) return true
+
+        val address = route.substringBefore('/')
+        if (!Utils.isIpAddress(address)) return false
+        return AppConfig.PRIVATE_IP_LIST.any { privateCidr ->
+            Utils.isIpInCidr(address, privateCidr)
+        }
     }
 
     /**
@@ -228,11 +249,7 @@ object SettingsManager {
     /**
      * Collects non-empty profile remarks while excluding specific config types.
      */
-    fun getProfileRemarks(excludeConfigTypes: Set<EConfigType> = setOf(
-        EConfigType.CUSTOM,
-        EConfigType.VLESS_REVERSE_HOME,
-        EConfigType.VLESS_ROAM_HOME,
-    )): List<String> {
+    fun getProfileRemarks(excludeConfigTypes: Set<EConfigType> = setOf(EConfigType.CUSTOM)): List<String> {
         return decodeAllServerList()
             .asSequence()
             .mapNotNull { guid -> decodeServerConfig(guid) }
