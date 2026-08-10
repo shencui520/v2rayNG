@@ -92,7 +92,7 @@
     <string name="server_lab_encryption">encryption</string>
     <string name="server_lab_flow">flow</string>
     <string name="server_lab_reverse_enable">Enable VLESS Reverse</string>
-    <string name="server_lab_reverse_summary">The reverse connection uses this node's address, transport, TLS and flow settings.</string>
+    <string name="server_lab_reverse_summary">The reverse connection uses the current node address, transport, TLS and flow settings.</string>
     <string name="server_lab_reverse_id">Reverse tunnel UUID</string>
     <string name="server_lab_public_key">PublicKey</string>
     <string name="server_lab_preshared_key">PreSharedKey(optional)</string>
