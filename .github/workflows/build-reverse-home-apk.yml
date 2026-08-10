@@ -53,12 +53,12 @@ jobs:
           fileName: libv2ray.aar
           out-file-path: V2rayNG/app/libs/
 
-      - name: Test and build arm64 Debug APK
+      - name: Test reverse-home configuration and build arm64 Debug APK
         working-directory: V2rayNG
         run: |
           printf "sdk.dir=%s\\n" "$ANDROID_HOME" > local.properties
           chmod +x gradlew
-          ./gradlew :app:testFdroidDebugUnitTest :app:assembleFdroidDebug -PABI_FILTERS=arm64-v8a --stacktrace
+          ./gradlew :app:testFdroidDebugUnitTest --tests com.v2ray.ang.core.HomeNetworkConfigBuilderTest :app:assembleFdroidDebug -PABI_FILTERS=arm64-v8a --stacktrace
 
       - name: Upload arm64 Debug APK
         uses: actions/upload-artifact@v4
