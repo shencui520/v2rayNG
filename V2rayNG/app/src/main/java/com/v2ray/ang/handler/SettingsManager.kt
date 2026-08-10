@@ -16,6 +16,7 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.RulesetItem
 import com.v2ray.ang.dto.entities.SubscriptionItem
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.extension.isRawConfigType
 import com.v2ray.ang.enums.RoutingType
 import com.v2ray.ang.enums.VpnInterfaceAddressConfig
 import com.v2ray.ang.extension.moveItem
@@ -176,6 +177,16 @@ object SettingsManager {
      * @return True if bypassing LAN, false otherwise.
      */
     fun routingRulesetsBypassLan(): Boolean {
+        val guid = MmkvManager.getSelectServer() ?: return false
+        val config = decodeServerConfig(guid) ?: return false
+
+        // The roaming device must capture the selected private CIDRs before Xray
+        // can route them to the VPS. Letting Android bypass LAN here would make
+        // the first, explicit home-network rule unreachable.
+        if (config.configType == EConfigType.VLESS_ROAM_HOME) {
+            return false
+        }
+
         val vpnBypassLan = MmkvManager.decodeSettingsString(AppConfig.PREF_VPN_BYPASS_LAN) ?: "1"
         if (vpnBypassLan == "1") {
             return true
@@ -183,9 +194,7 @@ object SettingsManager {
             return false
         }
 
-        val guid = MmkvManager.getSelectServer() ?: return false
-        val config = decodeServerConfig(guid) ?: return false
-        if (config.configType == EConfigType.CUSTOM) {
+        if (config.configType.isRawConfigType()) {
             val raw = MmkvManager.decodeServerRaw(guid) ?: return false
             val v2rayConfig = JsonUtil.fromJsonSafe(raw, V2rayConfig::class.java)
             val exist = v2rayConfig?.routing?.rules?.filter { it.outboundTag == TAG_DIRECT }?.any {
@@ -219,7 +228,11 @@ object SettingsManager {
     /**
      * Collects non-empty profile remarks while excluding specific config types.
      */
-    fun getProfileRemarks(excludeConfigTypes: Set<EConfigType> = setOf(EConfigType.CUSTOM)): List<String> {
+    fun getProfileRemarks(excludeConfigTypes: Set<EConfigType> = setOf(
+        EConfigType.CUSTOM,
+        EConfigType.VLESS_REVERSE_HOME,
+        EConfigType.VLESS_ROAM_HOME,
+    )): List<String> {
         return decodeAllServerList()
             .asSequence()
             .mapNotNull { guid -> decodeServerConfig(guid) }

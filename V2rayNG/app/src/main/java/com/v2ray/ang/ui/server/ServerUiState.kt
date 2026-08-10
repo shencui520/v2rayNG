@@ -11,6 +11,7 @@ import com.v2ray.ang.AppConfig.WIREGUARD_LOCAL_MTU
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.enums.NetworkType
+import com.v2ray.ang.extension.isHomeNetworkProfile
 import com.v2ray.ang.extension.nullIfBlank
 import com.v2ray.ang.util.JsonUtil
 
@@ -113,7 +114,7 @@ class ServerUiState(
 
     fun toProfileItem(initialConfig: ProfileItem): ProfileItem {
         val isVmess = configType == EConfigType.VMESS
-        val isVless = configType == EConfigType.VLESS
+        val isVless = configType == EConfigType.VLESS || configType.isHomeNetworkProfile()
         val isShadowsocks = configType == EConfigType.SHADOWSOCKS
         val isSocksOrHttp = configType == EConfigType.SOCKS || configType == EConfigType.HTTP
         val isWireguard = configType == EConfigType.WIREGUARD

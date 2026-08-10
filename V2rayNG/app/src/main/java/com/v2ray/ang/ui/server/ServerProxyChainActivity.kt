@@ -72,7 +72,13 @@ class ServerProxyChainActivity : BaseComponentActivity() {
         super.onCreate(savedInstanceState)
 
         allRemarks = SettingsManager.getProfileRemarks(
-            excludeConfigTypes = setOf(EConfigType.CUSTOM, EConfigType.POLICYGROUP, EConfigType.PROXYCHAIN)
+            excludeConfigTypes = setOf(
+                EConfigType.CUSTOM,
+                EConfigType.VLESS_REVERSE_HOME,
+                EConfigType.VLESS_ROAM_HOME,
+                EConfigType.POLICYGROUP,
+                EConfigType.PROXYCHAIN,
+            )
         )
         val config = MmkvManager.decodeServerConfig(editGuid)
         initialRemarks = config?.remarks ?: ""

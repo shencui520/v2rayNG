@@ -18,6 +18,8 @@ private enum class ImportMenuAction(@StringRes val labelRes: Int, val action: Ma
     ProxyChain(R.string.menu_item_import_config_proxy_chain, MainAction.ImportManually(EConfigType.PROXYCHAIN.value)),
     Vmess(R.string.menu_item_import_config_manually_vmess, MainAction.ImportManually(EConfigType.VMESS.value)),
     Vless(R.string.menu_item_import_config_manually_vless, MainAction.ImportManually(EConfigType.VLESS.value)),
+    ReverseHome(R.string.menu_item_import_config_vless_reverse_home, MainAction.ImportManually(EConfigType.VLESS_REVERSE_HOME.value)),
+    RoamHome(R.string.menu_item_import_config_vless_roam_home, MainAction.ImportManually(EConfigType.VLESS_ROAM_HOME.value)),
     Shadowsocks(R.string.menu_item_import_config_manually_ss, MainAction.ImportManually(EConfigType.SHADOWSOCKS.value)),
     Socks(R.string.menu_item_import_config_manually_socks, MainAction.ImportManually(EConfigType.SOCKS.value)),
     Http(R.string.menu_item_import_config_manually_http, MainAction.ImportManually(EConfigType.HTTP.value)),

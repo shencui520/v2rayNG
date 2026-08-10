@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">v2rayNG</string>
+    <string name="app_name" translatable="false">v2rayNG 回家反代</string>
     <string name="app_widget_name">开关</string>
     <string name="app_tile_name">开关</string>
     <string name="app_tile_first_use">初次使用此功能请先用 APP 添加配置</string>
@@ -36,6 +36,8 @@
     <string name="menu_item_import_config_proxy_chain">添加 [链式代理]</string>
     <string name="menu_item_import_config_manually_vmess">添加 [VMess]</string>
     <string name="menu_item_import_config_manually_vless">添加 [VLESS]</string>
+    <string name="menu_item_import_config_vless_reverse_home">添加 [VLESS 回家反代隧道]</string>
+    <string name="menu_item_import_config_vless_roam_home">添加 [VLESS 回家访问]</string>
     <string name="menu_item_import_config_manually_ss">添加 [Shadowsocks]</string>
     <string name="menu_item_import_config_manually_socks">添加 [SOCKS]</string>
     <string name="menu_item_import_config_manually_http">添加 [HTTP]</string>
@@ -91,6 +93,12 @@
     <string name="server_lab_security4">用户名 (可选)</string>
     <string name="server_lab_encryption">加密方式 (encryption)</string>
     <string name="server_lab_flow">流控 (flow)</string>
+    <string name="server_lab_reverse_id">反代隧道 UUID</string>
+    <string name="server_lab_home_cidrs">家里网段（IPv4 CIDR，逗号分隔）</string>
+    <string name="server_lab_home_cidrs_hint">示例：192.168.5.0/24</string>
+    <string name="title_vless_reverse_home">VLESS 回家反代隧道</string>
+    <string name="title_vless_roam_home">VLESS 回家访问</string>
+    <string name="toast_home_cidrs_required">请至少输入一个有效的家里 IPv4 网段</string>
     <string name="server_lab_public_key">PublicKey</string>
     <string name="server_lab_preshared_key">PreSharedKey (optional)</string>
     <string name="server_lab_short_id">ShortId</string>

@@ -9,6 +9,7 @@ import com.v2ray.ang.enums.CoreResolvedType
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.isNotNullEmpty
+import com.v2ray.ang.extension.isRawConfigType
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.util.LogUtil
@@ -32,7 +33,7 @@ object CoreConfigContextBuilder {
         val config = MmkvManager.decodeServerConfig(guid) ?: return null
 
         // CUSTOM: return immediately — CoreConfigManager handles this path on its own.
-        if (config.configType == EConfigType.CUSTOM) {
+        if (config.configType.isRawConfigType()) {
             return CoreConfigContext(context = context, guid = guid, isCustom = true)
         }
 
@@ -62,7 +63,7 @@ object CoreConfigContextBuilder {
      * Custom profiles are ignored at this stage and produce no entry.
      */
     private fun resolveOutbound(tag: String, profile: ProfileItem): CoreConfigContext.ResolvedOutbound? {
-        if (profile.configType == EConfigType.CUSTOM) {
+        if (profile.configType.isRawConfigType()) {
             return null
         }
 
@@ -265,7 +266,7 @@ object CoreConfigContextBuilder {
             .distinct()
             .mapNotNull { tag ->
                 SettingsManager.getServerViaRemarks(tag)
-                    ?.takeUnless { it.configType == EConfigType.CUSTOM || it.configType == EConfigType.POLICYGROUP }
+                    ?.takeUnless { it.configType.isRawConfigType() || it.configType == EConfigType.POLICYGROUP }
                     ?.let { resolveOutbound(tag, it) }
             }
             .toList()

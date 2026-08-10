@@ -73,6 +73,10 @@ data class ProfileItem(
     var proxyChainProfiles: String? = null,
 
     var browserDialerMode: String? = null,
+
+    // VLESS reverse / remote-home profiles. These are saved as generated full Xray configs.
+    var reversePassword: String? = null,
+    var homeCidrs: String? = null,
 ) {
 
     companion object {

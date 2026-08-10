@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.ServersCache
+import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.nullIfBlank
 import com.v2ray.ang.handler.AngConfigManager
@@ -383,6 +384,12 @@ fun ServerListItem(
 }
 
 private fun getProtocolDescription(profile: ProfileItem): String {
+    if (profile.configType == EConfigType.VLESS_REVERSE_HOME) {
+        return "VLESS Reverse / ${profile.homeCidrs.orEmpty()}"
+    }
+    if (profile.configType == EConfigType.VLESS_ROAM_HOME) {
+        return "VLESS Roam Home / ${profile.homeCidrs.orEmpty()}"
+    }
     if (profile.configType.isComplexType()) return profile.configType.name
     val parts = mutableListOf(profile.configType.name)
     profile.network?.let { net ->
