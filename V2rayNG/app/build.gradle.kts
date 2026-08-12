@@ -151,6 +151,8 @@ android {
 
 }
 
+apply(from = "reverse-brand.gradle")
+
 dependencies {
     // Core Libraries
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
