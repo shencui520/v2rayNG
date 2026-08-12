@@ -74,8 +74,5 @@ fun EConfigType.isGroupType(): Boolean {
  * @return True if the config type is Custom, PolicyGroup, or ProxyChain, false otherwise.
  */
 fun EConfigType.isComplexType(): Boolean {
-    return isRawConfigType() || this == EConfigType.POLICYGROUP || this == EConfigType.PROXYCHAIN
+    return this == EConfigType.CUSTOM || this == EConfigType.POLICYGROUP || this == EConfigType.PROXYCHAIN
 }
-
-/** Profiles whose runtime configuration is stored as complete Xray JSON. */
-fun EConfigType.isRawConfigType(): Boolean = this == EConfigType.CUSTOM

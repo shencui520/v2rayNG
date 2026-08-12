@@ -87,7 +87,6 @@ data class V2rayConfig(
             var encryption: String? = null,
             /*VLESS*/
             var flow: String? = null,
-            var reverse: ReverseBean? = null,
             /*Trojan/Shadowsocks*/
             var password: String? = null,
             /*Shadowsocks*/
@@ -100,19 +99,7 @@ data class V2rayConfig(
             var reserved: List<Int>? = null,
             var mtu: Int? = null,
             var domainStrategy: String? = null,
-            /*Freedom*/
-            var finalRules: List<FreedomFinalRule>? = null,
         ) {
-            data class ReverseBean(
-                var tag: String,
-            )
-
-            data class FreedomFinalRule(
-                var action: String,
-                var network: String? = null,
-                var ip: ArrayList<String>? = null,
-            )
-
             data class WireGuardBean(
                 var publicKey: String = "",
                 var preSharedKey: String? = null,

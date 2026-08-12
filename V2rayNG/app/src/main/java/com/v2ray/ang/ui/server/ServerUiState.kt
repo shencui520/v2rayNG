@@ -61,9 +61,6 @@ class ServerUiState(
     echConfigList: String = "",
     verifyPeerCertByName: String = "",
     pinnedCA256: String = "",
-    reverseEnabled: Boolean = false,
-    reversePassword: String = "",
-    reverseIp: String = DEFAULT_VLESS_REVERSE_IP,
     isFetchingCert: Boolean = false
 ) {
     var configType by mutableStateOf(configType)
@@ -112,9 +109,6 @@ class ServerUiState(
     var echConfigList by mutableStateOf(echConfigList)
     var verifyPeerCertByName by mutableStateOf(verifyPeerCertByName)
     var pinnedCA256 by mutableStateOf(pinnedCA256)
-    var reverseEnabled by mutableStateOf(reverseEnabled)
-    var reversePassword by mutableStateOf(reversePassword)
-    var reverseIp by mutableStateOf(reverseIp)
     var isFetchingCert by mutableStateOf(isFetchingCert)
 
     fun toProfileItem(initialConfig: ProfileItem): ProfileItem {
@@ -181,16 +175,11 @@ class ServerUiState(
             mldsa65Verify = mldsa65Verify,
             echConfigList = echConfigList,
             verifyPeerCertByName = verifyPeerCertByName,
-            pinnedCA256 = pinnedCA256,
-            reverseEnabled = if (isVless) reverseEnabled else null,
-            reversePassword = if (isVless && reverseEnabled) reversePassword.nullIfBlank() else null,
-            reverseIp = if (isVless && reverseEnabled) reverseIp.nullIfBlank() else null,
+            pinnedCA256 = pinnedCA256
         )
     }
 
     companion object {
-        const val DEFAULT_VLESS_REVERSE_IP = "192.168.5.0/24"
-
         fun fromProfileItem(
             initialConfig: ProfileItem
         ): ServerUiState =
@@ -240,10 +229,7 @@ class ServerUiState(
                 mldsa65Verify = initialConfig.mldsa65Verify ?: "",
                 echConfigList = initialConfig.echConfigList ?: "",
                 verifyPeerCertByName = initialConfig.verifyPeerCertByName ?: "",
-                pinnedCA256 = initialConfig.pinnedCA256 ?: "",
-                reverseEnabled = initialConfig.reverseEnabled == true,
-                reversePassword = initialConfig.reversePassword ?: "",
-                reverseIp = initialConfig.reverseIp ?: DEFAULT_VLESS_REVERSE_IP,
+                pinnedCA256 = initialConfig.pinnedCA256 ?: ""
             )
 
         fun from(

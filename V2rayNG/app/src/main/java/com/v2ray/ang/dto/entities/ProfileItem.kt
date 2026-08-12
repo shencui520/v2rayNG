@@ -2,6 +2,7 @@ package com.v2ray.ang.dto.entities
 
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.feature.reverse.VlessReverseOptions
 import com.v2ray.ang.util.Utils
 
 data class ProfileItem(
@@ -74,9 +75,15 @@ data class ProfileItem(
 
     var browserDialerMode: String? = null,
 
-    // Optional VLESS Reverse tunnel layered on top of a normal VLESS profile.
+    // Reverse-specific data is grouped to keep future upstream model merges small.
+    var vlessReverse: VlessReverseOptions? = null,
+
+    // Legacy fields from the first Reverse build; read for migration only.
+    @Deprecated("Use vlessReverse")
     var reverseEnabled: Boolean? = null,
+    @Deprecated("Use vlessReverse")
     var reversePassword: String? = null,
+    @Deprecated("Use vlessReverse")
     var reverseIp: String? = null,
 ) {
 

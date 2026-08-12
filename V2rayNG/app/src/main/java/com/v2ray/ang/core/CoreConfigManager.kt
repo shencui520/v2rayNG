@@ -14,6 +14,7 @@ import com.v2ray.ang.enums.BalancerStrategyType
 import com.v2ray.ang.enums.CoreResolvedType
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.isNotNullEmpty
+import com.v2ray.ang.feature.reverse.VlessReverseConfigOverlay
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.util.HttpUtil
@@ -25,11 +26,6 @@ import com.v2ray.ang.util.Utils
 object CoreConfigManager {
     private var initConfigCache: String? = null
     private var initConfigCacheWithTun: String? = null
-
-    private const val TAG_VLESS_REVERSE = "reverse"
-    private const val TAG_VLESS_REVERSE_INBOUND = "reverse-in"
-    private const val TAG_VLESS_REVERSE_DIRECT = "home-direct"
-    private const val DEFAULT_VLESS_REVERSE_IP = "192.168.5.0/24"
 
     //region get config function
 
@@ -47,7 +43,11 @@ object CoreConfigManager {
             if (configContext.isCustom) {
                 return buildV2rayCustomConfig(configContext)
             }
-            return toConfigResult(configContext, buildUnifiedConfig(configContext))
+            return toConfigResult(
+                configContext,
+                buildUnifiedConfig(configContext),
+                includeVlessReverse = true,
+            )
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to get V2ray config", e)
             return ConfigResult(
@@ -226,10 +226,6 @@ object CoreConfigManager {
                 )
             }
         }
-
-        // This must be first: reverse traffic is delivered by Xray through the
-        // virtual reverse inbound, before any user destination rule is evaluated.
-        configureVlessReverse(primaryResolvedOutbound.profile, v2rayConfig)
 
         applyObservability(v2rayConfig, balancerStrategies)
         applySpeedDisabled(v2rayConfig)
@@ -455,11 +451,24 @@ object CoreConfigManager {
     /**
      * Serialize a runtime configuration into a standard result object.
      */
-    private fun toConfigResult(configContext: CoreConfigContext, v2rayConfig: V2rayConfig): ConfigResult {
+    private fun toConfigResult(
+        configContext: CoreConfigContext,
+        v2rayConfig: V2rayConfig,
+        includeVlessReverse: Boolean = false,
+    ): ConfigResult {
+        val content = if (includeVlessReverse) {
+            val primaryProfile = configContext.resolvedOutbounds.firstOrNull()?.profile
+            val reverseOutbound = VlessReverseConfigOverlay
+                .buildReverseProfile(primaryProfile)
+                ?.let(::convertProfile2Outbound)
+            VlessReverseConfigOverlay.apply(primaryProfile, v2rayConfig, reverseOutbound)
+        } else {
+            JsonUtil.toJsonPretty(v2rayConfig).orEmpty()
+        }
         return ConfigResult(
             status = true,
             guid = configContext.guid,
-            content = JsonUtil.toJsonPretty(v2rayConfig) ?: ""
+            content = content,
         )
     }
 
@@ -566,88 +575,6 @@ object CoreConfigManager {
             inboundTun?.settings?.mtu = SettingsManager.getVpnMtu()
             inboundTun?.sniffing = inbound1.sniffing
         }
-    }
-
-    /**
-     * Add the optional VLESS Reverse connection to a normal VLESS profile.
-     *
-     * The primary VLESS outbound and every ordinary v2rayNG route are generated
-     * first.  This method only appends the extra reverse outbound and its
-     * virtual-inbound rule, so enabling reverse never replaces the user's
-     * routing, DNS, subscription, or VPN configuration.
-     */
-    private fun configureVlessReverse(profile: ProfileItem, v2rayConfig: V2rayConfig) {
-        if (profile.configType != EConfigType.VLESS || profile.reverseEnabled != true) return
-
-        val reverseId = profile.reversePassword?.trim().orEmpty()
-        if (reverseId.isEmpty()) {
-            LogUtil.w(AppConfig.TAG, "VLESS reverse is enabled but its UUID is empty; skipping reverse outbound")
-            return
-        }
-        val reverseIp = profile.reverseIp?.trim().takeUnless { it.isNullOrEmpty() } ?: DEFAULT_VLESS_REVERSE_IP
-        val reverseOutbound = convertProfile2Outbound(
-            profile.copy(
-                password = reverseId,
-                reverseEnabled = false,
-                reversePassword = null,
-                reverseIp = null,
-            )
-        ) ?: run {
-            LogUtil.w(AppConfig.TAG, "Failed to create VLESS reverse outbound")
-            return
-        }
-
-        if (!appendVlessReverse(v2rayConfig, reverseOutbound, reverseIp)) {
-            LogUtil.w(AppConfig.TAG, "VLESS reverse outbound tag is already in use; skipping reverse outbound")
-        }
-    }
-
-    /**
-     * Inject a prepared reverse VLESS outbound into a generated runtime config.
-     * Kept separate from profile conversion so the exact JSON addition can be
-     * verified without depending on Android settings storage.
-     */
-    internal fun appendVlessReverse(
-        v2rayConfig: V2rayConfig,
-        reverseOutbound: V2rayConfig.OutboundBean,
-        reverseIp: String = DEFAULT_VLESS_REVERSE_IP,
-    ): Boolean {
-        if (v2rayConfig.outbounds.any { it.tag == TAG_VLESS_REVERSE || it.tag == TAG_VLESS_REVERSE_DIRECT }) return false
-
-        // A VLESS Reverse tunnel manages its own persistent connection. Mux on
-        // that outbound would create an additional, incompatible layer.
-        reverseOutbound.tag = TAG_VLESS_REVERSE
-        reverseOutbound.mux = V2rayConfig.OutboundBean.MuxBean(enabled = false, concurrency = -1)
-        reverseOutbound.settings?.reverse = V2rayConfig.OutboundBean.OutSettingsBean.ReverseBean(
-            tag = TAG_VLESS_REVERSE_INBOUND
-        )
-        v2rayConfig.outbounds.add(reverseOutbound)
-        v2rayConfig.outbounds.add(
-            V2rayConfig.OutboundBean(
-                tag = TAG_VLESS_REVERSE_DIRECT,
-                protocol = AppConfig.PROTOCOL_FREEDOM,
-                settings = V2rayConfig.OutboundBean.OutSettingsBean(
-                    finalRules = listOf(
-                        V2rayConfig.OutboundBean.OutSettingsBean.FreedomFinalRule(
-                            action = "allow",
-                            network = "tcp,udp",
-                            ip = arrayListOf(reverseIp),
-                        )
-                    )
-                ),
-                streamSettings = null,
-                mux = null,
-            )
-        )
-
-        v2rayConfig.routing.rules.add(
-            0,
-            V2rayConfig.RoutingBean.RulesBean(
-                inboundTag = arrayListOf(TAG_VLESS_REVERSE_INBOUND),
-                outboundTag = TAG_VLESS_REVERSE_DIRECT,
-            )
-        )
-        return true
     }
 
     /**

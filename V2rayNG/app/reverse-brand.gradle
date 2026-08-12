@@ -1,0 +1,9 @@
+android {
+    flavorDimensions += "brand"
+    productFlavors {
+        reverse {
+            dimension = "brand"
+            applicationId = "com.v2ray.ang.reverse"
+        }
+    }
+}

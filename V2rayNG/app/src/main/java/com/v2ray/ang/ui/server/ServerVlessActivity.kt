@@ -9,10 +9,12 @@ import com.v2ray.ang.R
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.toast
+import com.v2ray.ang.feature.reverse.VlessReverseEditorState
+import com.v2ray.ang.feature.reverse.VlessReverseFields
+import com.v2ray.ang.feature.reverse.VlessReverseValidator
+import com.v2ray.ang.feature.reverse.resolvedVlessReverseOptions
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
-import com.v2ray.ang.ui.compose.SettingsSwitchItem
-import com.v2ray.ang.util.Utils
 
 class ServerVlessActivity : BaseServerActivity() {
 
@@ -29,21 +31,26 @@ class ServerVlessActivity : BaseServerActivity() {
         }.apply {
             configType = EConfigType.VLESS
         }
+        val reverseState = rememberSaveable(saver = VlessReverseEditorState.Saver) {
+            VlessReverseEditorState.from(initialConfig)
+        }
         val flowOptions = stringArrayResource(R.array.flows).toList()
 
         ServerEditorScaffold(
             title = serverConfigType.toString(),
-            onSaveClick = { saveServer(uiState) }
+            onSaveClick = { saveServer(uiState, reverseState::applyTo) }
         ) {
             CommonBasicFields(uiState)
             VlessProtocolFields(uiState, flowOptions)
-            VlessReverseFields(uiState)
+            VlessReverseFields(reverseState)
             CommonNetworkFields(uiState, options)
             CommonStreamSecurityFields(
                 state = uiState,
                 options = options,
                 scope = scope,
-                buildProfileItem = { uiState.toProfileItem(initialConfig) }
+                buildProfileItem = {
+                    reverseState.applyTo(uiState.toProfileItem(initialConfig))
+                }
             )
         }
     }
@@ -53,11 +60,12 @@ class ServerVlessActivity : BaseServerActivity() {
             toast(R.string.server_lab_id)
             return false
         }
-        if (config.reverseEnabled == true && config.reversePassword.isNullOrBlank()) {
+        val reverse = config.resolvedVlessReverseOptions()
+        if (!VlessReverseValidator.hasValidUuid(reverse)) {
             toast(R.string.server_lab_reverse_id)
             return false
         }
-        if (config.reverseEnabled == true && !isValidReverseIp(config.reverseIp)) {
+        if (!VlessReverseValidator.hasValidTarget(reverse)) {
             toast(R.string.server_lab_reverse_ip)
             return false
         }
@@ -85,38 +93,5 @@ class ServerVlessActivity : BaseServerActivity() {
             flowOptions,
             { state.flow = it }
         )
-    }
-
-    @Composable
-    private fun VlessReverseFields(state: ServerUiState) {
-        SettingsSwitchItem(
-            title = stringResource(R.string.server_lab_reverse_enable),
-            summary = stringResource(R.string.server_lab_reverse_summary),
-            checked = state.reverseEnabled,
-            onCheckedChange = { state.reverseEnabled = it }
-        )
-        if (state.reverseEnabled) {
-            FormTextField(
-                stringResource(R.string.server_lab_reverse_id),
-                state.reversePassword,
-                { state.reversePassword = it }
-            )
-            FormTextField(
-                stringResource(R.string.server_lab_reverse_ip),
-                state.reverseIp,
-                { state.reverseIp = it }
-            )
-        }
-    }
-
-    private fun isValidReverseIp(value: String?): Boolean {
-        val target = value?.trim().orEmpty()
-        val parts = target.split('/')
-        if (target.isEmpty() || parts.size !in 1..2 || !Utils.isIpAddress(parts.first())) return false
-        if (parts.size == 1) return true
-
-        val prefix = parts[1].toIntOrNull() ?: return false
-        val maximumPrefix = if (parts.first().contains(':')) 128 else 32
-        return prefix in 0..maximumPrefix
     }
 }
