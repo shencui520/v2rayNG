@@ -14,6 +14,7 @@ import com.v2ray.ang.enums.BalancerStrategyType
 import com.v2ray.ang.enums.CoreResolvedType
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.isNotNullEmpty
+import com.v2ray.ang.feature.reverse.VlessReverseConfigOverlay
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.util.HttpUtil
@@ -42,7 +43,11 @@ object CoreConfigManager {
             if (configContext.isCustom) {
                 return buildV2rayCustomConfig(configContext)
             }
-            return toConfigResult(configContext, buildUnifiedConfig(configContext))
+            return toConfigResult(
+                configContext,
+                buildUnifiedConfig(configContext),
+                includeVlessReverse = true,
+            )
         } catch (e: Exception) {
             LogUtil.e(AppConfig.TAG, "Failed to get V2ray config", e)
             return ConfigResult(
@@ -446,11 +451,24 @@ object CoreConfigManager {
     /**
      * Serialize a runtime configuration into a standard result object.
      */
-    private fun toConfigResult(configContext: CoreConfigContext, v2rayConfig: V2rayConfig): ConfigResult {
+    private fun toConfigResult(
+        configContext: CoreConfigContext,
+        v2rayConfig: V2rayConfig,
+        includeVlessReverse: Boolean = false,
+    ): ConfigResult {
+        val content = if (includeVlessReverse) {
+            val primaryProfile = configContext.resolvedOutbounds.firstOrNull()?.profile
+            val reverseOutbound = VlessReverseConfigOverlay
+                .buildReverseProfile(primaryProfile)
+                ?.let(::convertProfile2Outbound)
+            VlessReverseConfigOverlay.apply(primaryProfile, v2rayConfig, reverseOutbound)
+        } else {
+            JsonUtil.toJsonPretty(v2rayConfig).orEmpty()
+        }
         return ConfigResult(
             status = true,
             guid = configContext.guid,
-            content = JsonUtil.toJsonPretty(v2rayConfig) ?: ""
+            content = content,
         )
     }
 
