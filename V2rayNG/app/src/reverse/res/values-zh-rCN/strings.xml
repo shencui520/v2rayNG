@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="server_lab_reverse_enable">启用 VLESS 反代</string>
+    <string name="server_lab_reverse_summary">反代隧道复用当前 VLESS 节点的地址、传输、TLS 和 flow 设置。</string>
+    <string name="server_lab_reverse_id">反代隧道 UUID</string>
+    <string name="server_lab_reverse_ip">反代 IP/CIDR</string>
+</resources>
