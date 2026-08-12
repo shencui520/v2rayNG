@@ -18,6 +18,7 @@ import com.v2ray.ang.dto.entities.SubscriptionItem
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.enums.RoutingType
 import com.v2ray.ang.enums.VpnInterfaceAddressConfig
+import com.v2ray.ang.feature.reverse.PrivateRouteCapturePolicy
 import com.v2ray.ang.extension.moveItem
 import com.v2ray.ang.handler.MmkvManager.decodeAllServerList
 import com.v2ray.ang.handler.MmkvManager.decodeServerConfig
@@ -176,6 +177,11 @@ object SettingsManager {
      * @return True if bypassing LAN, false otherwise.
      */
     fun routingRulesetsBypassLan(): Boolean {
+        val rulesetItems = MmkvManager.decodeRoutingRulesets()
+        if (PrivateRouteCapturePolicy.shouldRoutePrivateTrafficThroughCore(rulesetItems)) {
+            return false
+        }
+
         val vpnBypassLan = MmkvManager.decodeSettingsString(AppConfig.PREF_VPN_BYPASS_LAN) ?: "1"
         if (vpnBypassLan == "1") {
             return true
@@ -194,7 +200,6 @@ object SettingsManager {
             return exist == true
         }
 
-        val rulesetItems = MmkvManager.decodeRoutingRulesets()
         val exist = rulesetItems?.filter { it.enabled && it.outboundTag == TAG_DIRECT }?.any {
             it.domain?.contains(GEOSITE_PRIVATE) == true || it.ip?.contains(GEOIP_PRIVATE) == true
         }
