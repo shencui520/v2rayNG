@@ -1,0 +1,17 @@
+android {
+    flavorDimensions += "brand"
+    productFlavors {
+        reverse {
+            dimension = "brand"
+            applicationId = "com.v2ray.ang.reverse"
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            if (output.outputFileName != null) {
+                output.outputFileName = output.outputFileName.replace("v2rayNG_", "v2rayNG-Reverse_")
+            }
+        }
+    }
+}
