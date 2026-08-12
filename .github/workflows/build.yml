@@ -79,7 +79,7 @@ jobs:
         run: ./gradlew :app:assembleFdroidReverseDebug -PABI_FILTERS=arm64-v8a --stacktrace
 
       - name: Validate Reverse release signing secrets
-        if: inputs.build_type == 'release'
+        if: inputs.build_type == 'release' && github.ref == 'refs/heads/master'
         env:
           KEYSTORE: ${{ secrets.REVERSE_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.REVERSE_KEYSTORE_PASSWORD }}
@@ -92,7 +92,7 @@ jobs:
           test -n "$KEY_PASSWORD"
 
       - name: Build signed arm64 Release APK
-        if: inputs.build_type == 'release'
+        if: inputs.build_type == 'release' && github.ref == 'refs/heads/master'
         working-directory: V2rayNG
         env:
           KEYSTORE: ${{ secrets.REVERSE_KEYSTORE_BASE64 }}
