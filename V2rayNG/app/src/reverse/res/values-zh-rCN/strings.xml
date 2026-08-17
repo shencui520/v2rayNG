@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="server_lab_reverse_enable">标记为反代节点</string>
-    <string name="server_lab_reverse_summary">将此 VLESS 节点设为全局反代随道。普通上网节点仍可自由切换，互不绑定。</string>
+    <string name="server_lab_reverse_summary">将此节点设为全局反代随道（使用上方节点 UUID）。普通上网节点仍可自由切换。</string>
     <string name="server_lab_reverse_id">反代随道 UUID</string>
-    <string name="server_lab_reverse_ip">反代 IP/CIDR</string>
+    <string name="server_lab_reverse_ip">家庭内网 IP/CIDR</string>
 </resources>

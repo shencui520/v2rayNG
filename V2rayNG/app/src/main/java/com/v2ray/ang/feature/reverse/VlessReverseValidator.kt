@@ -3,14 +3,14 @@ package com.v2ray.ang.feature.reverse
 import com.v2ray.ang.util.Utils
 
 object VlessReverseValidator {
-    fun hasValidUuid(options: VlessReverseOptions?): Boolean =
-        options?.enabled != true || options.uuid.isNotBlank()
+    /** UUID may be blank in options; the node's password is used at runtime. */
+    fun hasValidUuid(options: VlessReverseOptions?): Boolean = true
 
     fun hasValidTarget(options: VlessReverseOptions?): Boolean =
         options?.enabled != true || isValidIpOrCidr(options.targetIp)
 
-    fun requireValid(options: VlessReverseOptions) {
-        require(options.uuid.isNotBlank()) { "VLESS Reverse UUID is empty" }
+    fun requireValid(options: VlessReverseOptions, tunnelUuid: String = options.uuid) {
+        require(tunnelUuid.isNotBlank()) { "VLESS Reverse UUID is empty" }
         require(isValidIpOrCidr(options.targetIp)) {
             "Invalid VLESS Reverse target IP/CIDR: ${options.targetIp}"
         }

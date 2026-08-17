@@ -14,11 +14,9 @@ import com.v2ray.ang.util.JsonUtil
 
 class VlessReverseEditorState(
     enabled: Boolean = false,
-    uuid: String = "",
     targetIp: String = VlessReverseOptions.DEFAULT_TARGET_IP,
 ) {
     var enabled by mutableStateOf(enabled)
-    var uuid by mutableStateOf(uuid)
     var targetIp by mutableStateOf(targetIp)
 
     fun applyTo(profile: ProfileItem): ProfileItem =
@@ -26,27 +24,26 @@ class VlessReverseEditorState(
             vlessReverse = if (enabled) {
                 VlessReverseOptions(
                     enabled = true,
-                    uuid = uuid.trim(),
+                    // Empty uuid => runtime uses the node's own VLESS UUID (password).
+                    uuid = "",
                     targetIp = targetIp.trim(),
                 )
             } else {
                 null
             },
-            // Clear the legacy flat representation after the profile is saved.
             reverseEnabled = null,
             reversePassword = null,
             reverseIp = null,
         )
 
     private fun snapshot(): VlessReverseOptions =
-        VlessReverseOptions(enabled = enabled, uuid = uuid, targetIp = targetIp)
+        VlessReverseOptions(enabled = enabled, uuid = "", targetIp = targetIp)
 
     companion object {
         fun from(profile: ProfileItem): VlessReverseEditorState {
             val options = profile.resolvedVlessReverseOptions()
             return VlessReverseEditorState(
                 enabled = options?.enabled == true,
-                uuid = options?.uuid.orEmpty(),
                 targetIp = options?.targetIp?.takeIf { it.isNotBlank() }
                     ?: VlessReverseOptions.DEFAULT_TARGET_IP,
             )
@@ -56,7 +53,7 @@ class VlessReverseEditorState(
             save = { JsonUtil.toJson(it.snapshot()) },
             restore = { saved ->
                 JsonUtil.fromJsonSafe(saved, VlessReverseOptions::class.java)?.let {
-                    VlessReverseEditorState(it.enabled, it.uuid, it.targetIp)
+                    VlessReverseEditorState(it.enabled, it.targetIp)
                 }
             }
         )
@@ -72,11 +69,6 @@ fun VlessReverseFields(state: VlessReverseEditorState) {
         onCheckedChange = { state.enabled = it },
     )
     if (state.enabled) {
-        FormTextField(
-            stringResource(R.string.server_lab_reverse_id),
-            state.uuid,
-            { state.uuid = it },
-        )
         FormTextField(
             stringResource(R.string.server_lab_reverse_ip),
             state.targetIp,

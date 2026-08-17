@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Override only the reverse-related labels. Keep other app identity strings upstream. -->
     <string name="server_lab_reverse_enable">Mark as reverse node</string>
-    <string name="server_lab_reverse_summary">Mark this VLESS node as the global reverse tunnel. Normal browsing nodes can still be switched freely.</string>
+    <string name="server_lab_reverse_summary">Use this node as the global reverse tunnel (same UUID as above). Normal browsing nodes can still be switched freely.</string>
     <string name="server_lab_reverse_id">Reverse tunnel UUID</string>
-    <string name="server_lab_reverse_ip">Reverse IP/CIDR</string>
+    <string name="server_lab_reverse_ip">Home LAN IP/CIDR</string>
 </resources>

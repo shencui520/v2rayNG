@@ -4,6 +4,7 @@ import com.v2ray.ang.dto.entities.ProfileItem
 
 data class VlessReverseOptions(
     var enabled: Boolean = false,
+    /** Optional override; blank means use the node's own VLESS UUID (password). */
     var uuid: String = "",
     var targetIp: String = DEFAULT_TARGET_IP,
 ) {
@@ -25,4 +26,14 @@ fun ProfileItem.resolvedVlessReverseOptions(): VlessReverseOptions? {
         targetIp = reverseIp?.takeIf { it.isNotBlank() }
             ?: VlessReverseOptions.DEFAULT_TARGET_IP,
     )
+}
+
+/**
+ * UUID used for the reverse tunnel. Prefer an explicit reverse uuid when set;
+ * otherwise the node's own VLESS id (password).
+ */
+fun ProfileItem.reverseTunnelUuid(): String {
+    val options = resolvedVlessReverseOptions() ?: return ""
+    if (!options.enabled) return ""
+    return options.uuid.trim().ifBlank { password?.trim().orEmpty() }
 }
