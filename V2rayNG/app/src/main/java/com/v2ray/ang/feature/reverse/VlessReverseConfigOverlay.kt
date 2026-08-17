@@ -10,6 +10,9 @@ import com.v2ray.ang.util.JsonUtil
 /**
  * Applies the Reverse feature after v2rayNG has finished its normal dynamic
  * config generation. Existing outbounds, DNS and user routing stay untouched.
+ *
+ * [profile] is the globally marked reverse node (may differ from the selected
+ * browsing/proxy profile whose outbound is already in [config]).
  */
 object VlessReverseConfigOverlay {
     private const val TAG_REVERSE = "reverse"
