@@ -5,22 +5,36 @@ import com.google.gson.JsonObject
 import com.v2ray.ang.dto.V2rayConfig
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.util.JsonUtil
 
 /**
  * Applies the Reverse feature after v2rayNG has finished its normal dynamic
  * config generation. Existing outbounds, DNS and user routing stay untouched.
  *
- * [profile] is the globally marked reverse node (may differ from the selected
- * browsing/proxy profile whose outbound is already in [config]).
+ * The reverse tunnel is taken from the globally marked reverse node
+ * ([ReverseServerMark]), which may differ from the selected browsing profile.
  */
 object VlessReverseConfigOverlay {
     private const val TAG_REVERSE = "reverse"
     private const val TAG_REVERSE_IN = "reverse-in"
     private const val TAG_HOME_DIRECT = "home-direct"
 
-    fun buildReverseProfile(profile: ProfileItem?): ProfileItem? {
-        val options = profile?.resolvedVlessReverseOptions() ?: return null
+    /**
+     * Prefer the globally marked reverse node; fall back to [hint] when it has
+     * reverse enabled (compat with reverse-next fixed mode).
+     */
+    fun resolveReverseProfile(hint: ProfileItem?): ProfileItem? {
+        val markedGuid = ReverseServerMark.get()
+        val marked = markedGuid?.let { MmkvManager.decodeServerConfig(it) }
+        if (marked != null) return marked
+        if (hint?.resolvedVlessReverseOptions()?.enabled == true) return hint
+        return null
+    }
+
+    fun buildReverseProfile(hint: ProfileItem?): ProfileItem? {
+        val profile = resolveReverseProfile(hint) ?: return null
+        val options = profile.resolvedVlessReverseOptions() ?: return null
         if (profile.configType != EConfigType.VLESS || !options.enabled) return null
         VlessReverseValidator.requireValid(options)
         return profile.copy(
@@ -33,10 +47,11 @@ object VlessReverseConfigOverlay {
     }
 
     fun apply(
-        profile: ProfileItem?,
+        hint: ProfileItem?,
         config: V2rayConfig,
         reverseOutbound: V2rayConfig.OutboundBean?,
     ): String {
+        val profile = resolveReverseProfile(hint)
         val options = profile?.resolvedVlessReverseOptions()
         if (profile?.configType != EConfigType.VLESS || options?.enabled != true) {
             return JsonUtil.toJsonPretty(config).orEmpty()
