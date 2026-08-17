@@ -12,8 +12,11 @@ import com.v2ray.ang.util.JsonUtil
  * Applies the Reverse feature after v2rayNG has finished its normal dynamic
  * config generation. Existing outbounds, DNS and user routing stay untouched.
  *
- * The reverse tunnel is taken from the globally marked reverse node
- * ([ReverseServerMark]), which may differ from the selected browsing profile.
+ * Source of truth for "which node is reverse":
+ * 1) [ReverseServerMark] global GUID (preferred)
+ * 2) profile with vlessReverse.enabled (legacy / reverse-next compat)
+ *
+ * Tunnel UUID = that node's own VLESS id (password).
  */
 object VlessReverseConfigOverlay {
     private const val TAG_REVERSE = "reverse"
@@ -21,23 +24,43 @@ object VlessReverseConfigOverlay {
     private const val TAG_HOME_DIRECT = "home-direct"
 
     /**
-     * Prefer the globally marked reverse node; fall back to [hint] when it has
-     * reverse enabled (compat with reverse-next fixed mode).
+     * Resolve the profile that should supply the reverse tunnel.
      */
     fun resolveReverseProfile(hint: ProfileItem?): ProfileItem? {
-        val markedGuid = ReverseServerMark.get()
-        val marked = markedGuid?.let { MmkvManager.decodeServerConfig(it) }
-        if (marked != null) return marked
-        if (hint?.resolvedVlessReverseOptions()?.enabled == true) return hint
+        ReverseServerMark.get()?.let { guid ->
+            MmkvManager.decodeServerConfig(guid)?.let { marked ->
+                if (marked.configType == EConfigType.VLESS) return marked
+            }
+        }
+        if (hint?.configType == EConfigType.VLESS &&
+            hint.resolvedVlessReverseOptions()?.enabled == true
+        ) {
+            return hint
+        }
         return null
     }
 
+    private fun tunnelUuidOf(profile: ProfileItem): String {
+        val explicit = profile.resolvedVlessReverseOptions()?.uuid?.trim().orEmpty()
+        if (explicit.isNotBlank()) return explicit
+        return profile.password?.trim().orEmpty()
+    }
+
+    private fun targetIpOf(profile: ProfileItem): String {
+        return profile.resolvedVlessReverseOptions()?.targetIp?.trim()?.takeIf { it.isNotBlank() }
+            ?: VlessReverseOptions.DEFAULT_TARGET_IP
+    }
+
+    /**
+     * Build a temporary profile used only to generate the reverse outbound.
+     * Global mark alone is enough; does not require vlessReverse.enabled.
+     */
     fun buildReverseProfile(hint: ProfileItem?): ProfileItem? {
         val profile = resolveReverseProfile(hint) ?: return null
-        val options = profile.resolvedVlessReverseOptions() ?: return null
-        if (profile.configType != EConfigType.VLESS || !options.enabled) return null
-        val tunnelUuid = profile.reverseTunnelUuid()
-        VlessReverseValidator.requireValid(options, tunnelUuid)
+        val tunnelUuid = tunnelUuidOf(profile)
+        if (tunnelUuid.isBlank()) return null
+        val targetIp = targetIpOf(profile)
+        if (!VlessReverseValidator.isValidIpOrCidr(targetIp)) return null
         return profile.copy(
             password = tunnelUuid,
             vlessReverse = null,
@@ -53,12 +76,17 @@ object VlessReverseConfigOverlay {
         reverseOutbound: V2rayConfig.OutboundBean?,
     ): String {
         val profile = resolveReverseProfile(hint)
-        val options = profile?.resolvedVlessReverseOptions()
-        if (profile?.configType != EConfigType.VLESS || options?.enabled != true) {
+        if (profile == null || reverseOutbound == null) {
             return JsonUtil.toJsonPretty(config).orEmpty()
         }
-        VlessReverseValidator.requireValid(options, profile.reverseTunnelUuid())
-        requireNotNull(reverseOutbound) { "Failed to create VLESS Reverse outbound" }
+        val tunnelUuid = tunnelUuidOf(profile)
+        if (tunnelUuid.isBlank()) {
+            return JsonUtil.toJsonPretty(config).orEmpty()
+        }
+        val targetIp = targetIpOf(profile)
+        if (!VlessReverseValidator.isValidIpOrCidr(targetIp)) {
+            return JsonUtil.toJsonPretty(config).orEmpty()
+        }
 
         val root = JsonUtil.parseString(JsonUtil.toJson(config))
             ?.takeIf { it.isJsonObject }
@@ -89,7 +117,7 @@ object VlessReverseConfigOverlay {
             addProperty("tag", TAG_REVERSE_IN)
         })
         outbounds.add(reverseJson)
-        outbounds.add(homeDirect(options.targetIp.trim()))
+        outbounds.add(homeDirect(targetIp))
 
         val routing = root.getAsJsonObject("routing")
             ?: JsonObject().also { root.add("routing", it) }
