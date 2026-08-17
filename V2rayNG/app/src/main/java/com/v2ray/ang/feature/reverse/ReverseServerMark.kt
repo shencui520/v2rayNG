@@ -10,16 +10,31 @@ object ReverseServerMark {
     private const val ID_MAIN = "MAIN"
     private const val KEY_REVERSE_SERVER = "REVERSE_SERVER"
 
-    private val mainStorage by lazy { MMKV.mmkvWithID(ID_MAIN, MMKV.MULTI_PROCESS_MODE) }
+    private fun storageOrNull(): MMKV? =
+        try {
+            MMKV.mmkvWithID(ID_MAIN, MMKV.MULTI_PROCESS_MODE)
+        } catch (_: Throwable) {
+            // Unit tests / early process stages may not have MMKV initialized.
+            null
+        }
 
     fun get(): String? =
-        mainStorage.decodeString(KEY_REVERSE_SERVER)?.takeIf { it.isNotBlank() }
+        try {
+            storageOrNull()?.decodeString(KEY_REVERSE_SERVER)?.takeIf { it.isNotBlank() }
+        } catch (_: Throwable) {
+            null
+        }
 
     fun set(guid: String?) {
-        if (guid.isNullOrBlank()) {
-            mainStorage.remove(KEY_REVERSE_SERVER)
-        } else {
-            mainStorage.encode(KEY_REVERSE_SERVER, guid)
+        val storage = storageOrNull() ?: return
+        try {
+            if (guid.isNullOrBlank()) {
+                storage.remove(KEY_REVERSE_SERVER)
+            } else {
+                storage.encode(KEY_REVERSE_SERVER, guid)
+            }
+        } catch (_: Throwable) {
+            // Ignore when MMKV is unavailable.
         }
     }
 
