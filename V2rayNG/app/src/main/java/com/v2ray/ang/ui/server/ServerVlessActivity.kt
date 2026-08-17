@@ -13,6 +13,7 @@ import com.v2ray.ang.feature.reverse.VlessReverseEditorState
 import com.v2ray.ang.feature.reverse.VlessReverseFields
 import com.v2ray.ang.feature.reverse.VlessReverseValidator
 import com.v2ray.ang.feature.reverse.resolvedVlessReverseOptions
+import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
 
@@ -32,13 +33,26 @@ class ServerVlessActivity : BaseServerActivity() {
             configType = EConfigType.VLESS
         }
         val reverseState = rememberSaveable(saver = VlessReverseEditorState.Saver) {
-            VlessReverseEditorState.from(initialConfig)
+            VlessReverseEditorState.from(initialConfig).also { state ->
+                // Reflect global mark when opening editor
+                if (editGuid.isNotEmpty() && editGuid == MmkvManager.getReverseServer()) {
+                    state.enabled = true
+                }
+            }
         }
         val flowOptions = stringArrayResource(R.array.flows).toList()
 
         ServerEditorScaffold(
             title = serverConfigType.toString(),
-            onSaveClick = { saveServer(uiState, reverseState::applyTo) }
+            onSaveClick = {
+                val savedGuid = saveServer(uiState, reverseState::applyTo) ?: return@ServerEditorScaffold
+                // Global reverse mark is independent of the selected browsing node.
+                if (reverseState.enabled) {
+                    MmkvManager.setReverseServer(savedGuid)
+                } else if (MmkvManager.getReverseServer() == savedGuid) {
+                    MmkvManager.setReverseServer(null)
+                }
+            }
         ) {
             CommonBasicFields(uiState)
             VlessProtocolFields(uiState, flowOptions)
@@ -61,13 +75,16 @@ class ServerVlessActivity : BaseServerActivity() {
             return false
         }
         val reverse = config.resolvedVlessReverseOptions()
-        if (!VlessReverseValidator.hasValidUuid(reverse)) {
-            toast(R.string.server_lab_reverse_id)
-            return false
-        }
-        if (!VlessReverseValidator.hasValidTarget(reverse)) {
-            toast(R.string.server_lab_reverse_ip)
-            return false
+        // Only validate reverse fields when this profile is marked as reverse.
+        if (reverse?.enabled == true) {
+            if (!VlessReverseValidator.hasValidUuid(reverse)) {
+                toast(R.string.server_lab_reverse_id)
+                return false
+            }
+            if (!VlessReverseValidator.hasValidTarget(reverse)) {
+                toast(R.string.server_lab_reverse_ip)
+                return false
+            }
         }
         return true
     }

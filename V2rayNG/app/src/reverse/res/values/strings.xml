@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">v2rayNG Reverse</string>
-    <string name="server_lab_reverse_enable">Enable VLESS Reverse</string>
-    <string name="server_lab_reverse_summary">Reuse this VLESS node address, transport, TLS and flow settings for the reverse tunnel.</string>
+    <!-- Override only the reverse-related labels. Keep other app identity strings upstream. -->
+    <string name="server_lab_reverse_enable">Mark as reverse node</string>
+    <string name="server_lab_reverse_summary">Mark this VLESS node as the global reverse tunnel. Normal browsing nodes can still be switched freely.</string>
     <string name="server_lab_reverse_id">Reverse tunnel UUID</string>
     <string name="server_lab_reverse_ip">Reverse IP/CIDR</string>
 </resources>
