@@ -74,10 +74,7 @@ class ServerVlessActivity : BaseServerActivity() {
         }
         val reverse = config.resolvedVlessReverseOptions()
         if (reverse?.enabled == true) {
-            if (!VlessReverseValidator.hasValidUuid(reverse)) {
-                toast(R.string.server_lab_reverse_id)
-                return false
-            }
+            // Reverse tunnel uses this node's UUID (password); only validate target CIDR.
             if (!VlessReverseValidator.hasValidTarget(reverse)) {
                 toast(R.string.server_lab_reverse_ip)
                 return false

@@ -36,9 +36,10 @@ object VlessReverseConfigOverlay {
         val profile = resolveReverseProfile(hint) ?: return null
         val options = profile.resolvedVlessReverseOptions() ?: return null
         if (profile.configType != EConfigType.VLESS || !options.enabled) return null
-        VlessReverseValidator.requireValid(options)
+        val tunnelUuid = profile.reverseTunnelUuid()
+        VlessReverseValidator.requireValid(options, tunnelUuid)
         return profile.copy(
-            password = options.uuid.trim(),
+            password = tunnelUuid,
             vlessReverse = null,
             reverseEnabled = null,
             reversePassword = null,
@@ -56,7 +57,7 @@ object VlessReverseConfigOverlay {
         if (profile?.configType != EConfigType.VLESS || options?.enabled != true) {
             return JsonUtil.toJsonPretty(config).orEmpty()
         }
-        VlessReverseValidator.requireValid(options)
+        VlessReverseValidator.requireValid(options, profile.reverseTunnelUuid())
         requireNotNull(reverseOutbound) { "Failed to create VLESS Reverse outbound" }
 
         val root = JsonUtil.parseString(JsonUtil.toJson(config))
