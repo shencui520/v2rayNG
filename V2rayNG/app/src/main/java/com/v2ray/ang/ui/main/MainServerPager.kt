@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +49,7 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.ServersCache
 import com.v2ray.ang.extension.isComplexType
 import com.v2ray.ang.extension.nullIfBlank
+import com.v2ray.ang.feature.reverse.ReverseServerMark
 import com.v2ray.ang.handler.AngConfigManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.ui.compose.ItemDivider
@@ -252,6 +255,7 @@ private fun ServerItemRow(
         testResult = serverCache.testDelayString,
         testDelayMillis = serverCache.testDelayMillis,
         isSelected = serverCache.guid == selectedGuid,
+        isReverseMarked = serverCache.guid == ReverseServerMark.get(),
         subscriptionRemarks = subRemarks,
         doubleColumnDisplay = false,
         onClick = { onSelectServer(serverCache.guid) },
@@ -286,6 +290,7 @@ private fun ServerItemColumn(
             testResult = serverCache.testDelayString,
             testDelayMillis = serverCache.testDelayMillis,
             isSelected = serverCache.guid == selectedGuid,
+            isReverseMarked = serverCache.guid == ReverseServerMark.get(),
             subscriptionRemarks = subRemarks,
             doubleColumnDisplay = doubleColumnDisplay,
             onClick = { onSelectServer(serverCache.guid) },
@@ -306,6 +311,7 @@ fun ServerListItem(
     testResult: String,
     testDelayMillis: Long,
     isSelected: Boolean,
+    isReverseMarked: Boolean = false,
     subscriptionRemarks: String,
     doubleColumnDisplay: Boolean,
     onClick: () -> Unit,
@@ -328,7 +334,7 @@ fun ServerListItem(
                 .width(10.dp)
                 .fillMaxHeight()
         ) {
-            if (isSelected) {
+            if (isSelected || isReverseMarked) {
                 Row {
                     Spacer(Modifier.width(6.dp))
                     Box(
@@ -336,7 +342,10 @@ fun ServerListItem(
                             .width(4.dp)
                             .fillMaxHeight()
                             .padding(vertical = 10.dp)
-                            .background(MaterialTheme.colorScheme.primary)
+                            .background(
+                                if (isReverseMarked) MaterialTheme.colorScheme.tertiary
+                                else MaterialTheme.colorScheme.primary
+                            )
                     )
                 }
             }
@@ -349,6 +358,22 @@ fun ServerListItem(
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(remarks, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.copy(lineBreak = LineBreak.Paragraph), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (isReverseMarked) {
+                    Text(
+                        text = stringResource(R.string.server_lab_reverse_badge),
+                        modifier = Modifier
+                            .padding(start = 6.dp, end = 4.dp)
+                            .background(
+                                MaterialTheme.colorScheme.tertiaryContainer,
+                                RoundedCornerShape(4.dp),
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        maxLines = 1,
+                    )
+                }
                 if (doubleColumnDisplay) {
                     IconButton(onClick = onMore, Modifier.size(36.dp)) {
                         Icon(painterResource(R.drawable.ic_more_vert_24dp), null, Modifier.size(24.dp))
