@@ -1,5 +1,6 @@
 name: Build VLESS Reverse arm64 APK
 
+# Compile current branch only (no upstream merge).
 on:
   workflow_dispatch:
     inputs:
@@ -16,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: reverse-arm64-${{ github.ref }}
+  group: ci-reverse-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -79,39 +80,41 @@ jobs:
         run: ./gradlew :app:assembleFdroidReverseDebug -PABI_FILTERS=arm64-v8a --stacktrace
 
       - name: Validate Reverse release signing secrets
-        if: inputs.build_type == 'release' && github.ref == 'refs/heads/master'
+        if: inputs.build_type == 'release'
         env:
-          KEYSTORE: ${{ secrets.REVERSE_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.REVERSE_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.REVERSE_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.REVERSE_KEY_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          test -n "$KEYSTORE"
-          test -n "$STORE_PASSWORD"
-          test -n "$KEY_ALIAS"
-          test -n "$KEY_PASSWORD"
+          set -euo pipefail
+          for v in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then
+              echo "Missing secret: $v" >&2
+              exit 1
+            fi
+          done
+          echo "$KEYSTORE_BASE64" | base64 -d > /tmp/reverse.jks
 
       - name: Build signed arm64 Release APK
-        if: inputs.build_type == 'release' && github.ref == 'refs/heads/master'
+        if: inputs.build_type == 'release'
         working-directory: V2rayNG
         env:
-          KEYSTORE: ${{ secrets.REVERSE_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.REVERSE_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.REVERSE_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.REVERSE_KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          printf '%s' "$KEYSTORE" | base64 --decode > reverse-release.jks
-          ./gradlew :app:assembleFdroidReverseRelease \
-            -PABI_FILTERS=arm64-v8a \
-            -Pandroid.injected.signing.store.file="$PWD/reverse-release.jks" \
-            -Pandroid.injected.signing.store.password="$STORE_PASSWORD" \
+          set -euo pipefail
+          ./gradlew :app:assembleFdroidReverseRelease -PABI_FILTERS=arm64-v8a --stacktrace \
+            -Pandroid.injected.signing.store.file=/tmp/reverse.jks \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
-            --stacktrace
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Upload arm64 APK
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: v2rayNG-Reverse-arm64-${{ inputs.build_type }}
-          path: V2rayNG/app/build/outputs/apk/**/*arm64-v8a*.apk
+          path: |
+            V2rayNG/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
