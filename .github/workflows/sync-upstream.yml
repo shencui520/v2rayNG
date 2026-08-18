@@ -1,5 +1,7 @@
-name: Sync upstream and validate Reverse
+name: Adapt upstream to Reverse and build
 
+# Listed on default branch so it appears in Actions UI.
+# Always checks out ci-reverse as the Reverse feature base.
 on:
   workflow_dispatch:
     inputs:
@@ -8,23 +10,31 @@ on:
         required: true
         default: master
         type: string
+      build_type:
+        description: APK type after adapt
+        required: true
+        default: debug
+        type: choice
+        options:
+          - debug
+          - release
 
 permissions:
   contents: write
   pull-requests: write
 
 concurrency:
-  group: reverse-upstream-sync
+  group: ci-reverse-upstream-adapt
   cancel-in-progress: false
 
 jobs:
-  sync-and-validate:
+  adapt-and-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out Reverse integration branch
+      - name: Check out Reverse feature branch (ci-reverse)
         uses: actions/checkout@v7
         with:
-          ref: reverse-next
+          ref: ci-reverse
           submodules: recursive
           fetch-depth: 0
 
@@ -36,18 +46,19 @@ jobs:
           base_sha=$(git rev-parse HEAD)
           workflow_snapshot=$(mktemp -d)
           cp -a .github/workflows/. "$workflow_snapshot/"
-          git remote add upstream https://github.com/2dust/v2rayNG.git
+          git remote add upstream https://github.com/2dust/v2rayNG.git || true
           git fetch upstream "$UPSTREAM_REF"
           sync_branch="sync/upstream-${GITHUB_RUN_ID}"
           git switch -c "$sync_branch"
           if ! git merge --no-edit FETCH_HEAD; then
-            git diff --name-only --diff-filter=U
-            echo "Upstream merge has conflicts; Reverse hooks require adaptation." >&2
+            git diff --name-only --diff-filter=U || true
+            echo "Upstream merge has conflicts; Reverse hooks require manual adaptation." >&2
             exit 1
           fi
           rm -rf .github/workflows
           mkdir -p .github/workflows
           cp -a "$workflow_snapshot/." .github/workflows/
+          mkdir -p .reverse
           git rev-parse FETCH_HEAD > .reverse/UPSTREAM_BASE
           git submodule sync --recursive
           git submodule update --init --recursive
@@ -76,16 +87,67 @@ jobs:
           bash compile-hevtun.sh
           cp -r libs V2rayNG/app/
           tag=$(git -C AndroidLibXrayLite describe --tags --abbrev=0)
-          gh release download "$tag"             --repo 2dust/AndroidLibXrayLite             --pattern libv2ray.aar             --dir V2rayNG/app/libs/
+          gh release download "$tag" \
+            --repo 2dust/AndroidLibXrayLite \
+            --pattern libv2ray.aar \
+            --dir V2rayNG/app/libs/
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Test overlay and compile arm64 APK
+      - name: Run Reverse contract tests
         working-directory: V2rayNG
         run: |
           printf "sdk.dir=%s\n" "$ANDROID_HOME" > local.properties
           chmod +x gradlew
-          ./gradlew :app:testFdroidReverseDebugUnitTest             --tests com.v2ray.ang.feature.reverse.VlessReverseConfigOverlayTest             --tests com.v2ray.ang.feature.reverse.PrivateRouteCapturePolicyTest             :app:assembleFdroidReverseDebug             -PABI_FILTERS=arm64-v8a --stacktrace
+          ./gradlew :app:testFdroidReverseDebugUnitTest \
+            --tests com.v2ray.ang.feature.reverse.VlessReverseConfigOverlayTest \
+            --tests com.v2ray.ang.feature.reverse.PrivateRouteCapturePolicyTest \
+            -PABI_FILTERS=arm64-v8a --stacktrace
+
+      - name: Build arm64 Debug APK
+        if: inputs.build_type == 'debug'
+        working-directory: V2rayNG
+        run: ./gradlew :app:assembleFdroidReverseDebug -PABI_FILTERS=arm64-v8a --stacktrace
+
+      - name: Validate Reverse release signing secrets
+        if: inputs.build_type == 'release'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for v in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then
+              echo "Missing secret: $v" >&2
+              exit 1
+            fi
+          done
+          echo "$KEYSTORE_BASE64" | base64 -d > /tmp/reverse.jks
+
+      - name: Build signed arm64 Release APK
+        if: inputs.build_type == 'release'
+        working-directory: V2rayNG
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          ./gradlew :app:assembleFdroidReverseRelease -PABI_FILTERS=arm64-v8a --stacktrace \
+            -Pandroid.injected.signing.store.file=/tmp/reverse.jks \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+
+      - name: Upload arm64 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2rayNG-Reverse-arm64-${{ inputs.build_type }}
+          path: |
+            V2rayNG/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
 
       - name: Push validated sync branch and open draft PR
         env:
@@ -97,7 +159,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "sync: adapt Reverse to upstream $UPSTREAM_REF"
+            git commit -m "sync: adapt Reverse (ci-reverse) to upstream $UPSTREAM_REF"
           fi
           git push --set-upstream origin "$SYNC_BRANCH"
-          gh pr create             --base reverse-next             --head "$SYNC_BRANCH"             --draft             --title "Sync Reverse with upstream $UPSTREAM_REF"             --body "Upstream merge completed. Reverse contract tests passed and an arm64 Debug APK compiled successfully. Workflows remain manual-only."
+          gh pr create \
+            --base ci-reverse \
+            --head "$SYNC_BRANCH" \
+            --draft \
+            --title "Sync Reverse with upstream $UPSTREAM_REF" \
+            --body "Merged 2dust/v2rayNG@$UPSTREAM_REF into Reverse (mark mode). Contract tests passed; arm64 APK built. Workflows remain manual-only."
