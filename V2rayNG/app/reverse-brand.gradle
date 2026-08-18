@@ -4,6 +4,7 @@ android {
         reverse {
             dimension = "brand"
             applicationId = "com.v2ray.ang.reverse"
+            resValue "string", "app_name", "v2rayNG Reverse"
         }
     }
 }

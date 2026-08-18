@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name" translatable="false">v2rayNG Reverse</string>
     <string name="server_lab_reverse_enable">Mark as reverse node</string>
     <string name="server_lab_reverse_summary">Use this node as the global reverse tunnel (same UUID as above). Normal browsing nodes can still be switched freely.</string>
     <string name="server_lab_reverse_id">Reverse tunnel UUID</string>
     <string name="server_lab_reverse_ip">Home LAN IP/CIDR</string>
+    <string name="server_lab_reverse_badge">REV</string>
 </resources>
