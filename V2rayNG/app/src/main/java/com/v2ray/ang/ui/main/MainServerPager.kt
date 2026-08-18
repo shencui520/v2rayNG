@@ -334,7 +334,7 @@ fun ServerListItem(
                 .width(10.dp)
                 .fillMaxHeight()
         ) {
-            if (isSelected || isReverseMarked) {
+            if (isSelected) {
                 Row {
                     Spacer(Modifier.width(6.dp))
                     Box(
@@ -342,10 +342,7 @@ fun ServerListItem(
                             .width(4.dp)
                             .fillMaxHeight()
                             .padding(vertical = 10.dp)
-                            .background(
-                                if (isReverseMarked) MaterialTheme.colorScheme.tertiary
-                                else MaterialTheme.colorScheme.primary
-                            )
+                            .background(MaterialTheme.colorScheme.primary)
                     )
                 }
             }
